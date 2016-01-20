@@ -11,8 +11,8 @@ import javax.jws.WebService;
  *
  * @author Damiano Di Stefano, Marco Giuseppe Salafia
  */
-@WebService(serviceName = "NewWebService")
-public class NewWebService
+@WebService(serviceName = "FaultDetectorWS")
+public class FaultDetectorWS
 {
 
     @EJB

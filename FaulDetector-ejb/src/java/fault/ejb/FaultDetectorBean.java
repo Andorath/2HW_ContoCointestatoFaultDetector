@@ -43,6 +43,7 @@ public class FaultDetectorBean
     
     public void keepAlive(String processID)
     {
+        System.out.println("[HB " + processID + "]");
         processMap.put(processID, ProcessStatus.UNSUSPECTED);
         aliveSet.add(processID);
     }
@@ -73,9 +74,9 @@ public class FaultDetectorBean
         
         this.faultySet = newFaultySet;
         this.aliveSet.clear();*/
-        
+              
         Set<String> newFaultySet = new HashSet<>();
-        
+        System.out.println("ALIVE -> " + aliveSet.size());
         for(String pID : processMap.keySet())
         {
             if(!aliveSet.contains(pID))
@@ -86,6 +87,7 @@ public class FaultDetectorBean
             }
         }
         
+        System.out.println("FAULTY -> " + faultySet.size());
         for(String pID : faultySet)
         {
             if(aliveSet.contains(pID) && processMap.get(pID) != ProcessStatus.FAILED)
