@@ -25,5 +25,15 @@ public class FaultDetectorWS
     {
         ejbRef.keepAlive(processID);
     }
+
+    /**
+     * Web service operation
+     */
+    @WebMethod(operationName = "failure")
+    @Oneway
+    public void failure(@WebParam(name = "processID") String processID)
+    {
+        ejbRef.failure(processID);
+    }
     
 }

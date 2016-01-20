@@ -44,42 +44,28 @@ public class FaultDetectorBean
     public void keepAlive(String processID)
     {
         System.out.println("[HB " + processID + "]");
-        processMap.put(processID, ProcessStatus.UNSUSPECTED);
-        aliveSet.add(processID);
+        if(!processMap.containsKey(processID))
+            processMap.put(processID, ProcessStatus.UNSUSPECTED);
+        
+        if(processMap.get(processID) != ProcessStatus.FAILED)
+            aliveSet.add(processID);
+    }
+    
+    public void failure(String processID)
+    {
+        System.out.println("[FAILURE " + processID + "]");
+        processMap.put(processID, ProcessStatus.FAILED);
+        aliveSet.remove(processID);
     }
     
     @Timeout 
     private void checkAliveProcesses()
     {
-        /*Set<String> newFaultySet = getFaultySet();
-        
-        for(String pID : newFaultySet)
-        {
-            ProcessStatus status = processMap.get(pID);
-            
-            switch  (status)
-            {
-                case UNSUSPECTED:
-                    System.out.println("Il Processo " + pID + " è diventato SUSPECTED");
-                    processMap.put(pID, ProcessStatus.SUSPECTED);
-                    break;
-                case SUSPECTED:
-                    break;
-                case FAILED:
-                    break;
-            }   
-        }
-        
-        checkRevenantProcesses(newFaultySet);
-        
-        this.faultySet = newFaultySet;
-        this.aliveSet.clear();*/
-              
         Set<String> newFaultySet = new HashSet<>();
         System.out.println("ALIVE -> " + aliveSet.size());
         for(String pID : processMap.keySet())
         {
-            if(!aliveSet.contains(pID))
+            if(!aliveSet.contains(pID) && processMap.get(pID) == ProcessStatus.UNSUSPECTED)
             {
                 System.out.println("Il processo " + pID + " è diventato SUSPECTED!");
                 processMap.put(pID, ProcessStatus.SUSPECTED);
@@ -87,7 +73,7 @@ public class FaultDetectorBean
             }
         }
         
-        System.out.println("FAULTY -> " + faultySet.size());
+        System.out.println("FAULTY -> " + newFaultySet.size());
         for(String pID : faultySet)
         {
             if(aliveSet.contains(pID) && processMap.get(pID) != ProcessStatus.FAILED)
@@ -99,32 +85,6 @@ public class FaultDetectorBean
         
         this.faultySet = newFaultySet;
         this.aliveSet.clear();
-    }
-    
-    void checkRevenantProcesses(Set<String> newFaultySet)
-    {
-        Set<String> revenantSet = new HashSet<>(this.faultySet);
-        System.out.println("Dimensione Faulty set : " + faultySet.size());
-        System.out.println("Dimensione NEW Faulty set : " + newFaultySet.size());
-        if (revenantSet.removeAll(newFaultySet))
-        {
-            for (String revenantID : revenantSet)
-            {
-                if (processMap.get(revenantID) != ProcessStatus.FAILED)
-                {
-                    System.out.println("Il Processo " + revenantID + " è tornato UNSUSPECTED");
-                    processMap.put(revenantID, ProcessStatus.UNSUSPECTED);
-                }
-            }
-        }
-    }
-
-    private Set<String> getFaultySet()
-    {
-        Set<String> faultySet = new HashSet<>(processMap.keySet());
-        faultySet.removeAll(aliveSet);
-        System.out.println("I Faulty Process sono: " + faultySet.size());
-        return faultySet;
     }
     
     private enum ProcessStatus
