@@ -41,7 +41,7 @@ public class FaultDetectorBean
         this.aliveSet = new HashSet<>();
         this.faultySet = new HashSet<>();
         this.timer = timerService.createIntervalTimer(10, 
-                                                      2 * 1000, 
+                                                      5 * 1000, 
                                                       new TimerConfig());
     }
     
@@ -85,8 +85,9 @@ public class FaultDetectorBean
         
         System.out.println("FAULTY -> " + faultySet.size());
         
-        //Per ogni processo nell'insieme Faulty del round precedente
-        for(String pID : faultySet)
+        //Per ogni processo nell'insieme Faulty
+        HashSet<String> faultyCopy = new HashSet<>(faultySet);
+        for(String pID : faultyCopy)
         {
             //se è vivo a questo giro vuol dire che non è più SUSPECTED
             if(aliveSet.contains(pID))
