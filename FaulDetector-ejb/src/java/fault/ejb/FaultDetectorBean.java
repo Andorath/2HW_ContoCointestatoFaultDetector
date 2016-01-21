@@ -2,12 +2,15 @@ package fault.ejb;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.ejb.ConcurrencyManagement;
+import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.Singleton;
 import javax.ejb.LocalBean;
+import javax.ejb.Lock;
+import javax.ejb.LockType;
 import javax.ejb.Timeout;
 import javax.ejb.Timer;
 import javax.ejb.TimerConfig;
@@ -19,6 +22,7 @@ import javax.ejb.TimerService;
  */
 @Singleton
 @LocalBean
+@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
 public class FaultDetectorBean
 {
     @Resource
@@ -41,27 +45,33 @@ public class FaultDetectorBean
                                                       new TimerConfig());
     }
     
+    @Lock(LockType.WRITE)
     public void keepAlive(String processID)
     {
         System.out.println("[HB " + processID + "]");
+        //Se non contiene il processo lo registra
         if(!processMap.containsKey(processID))
             processMap.put(processID, ProcessStatus.UNSUSPECTED);
         
+        //Se il processo non è FAILED lo registra come Vivo
         if(processMap.get(processID) != ProcessStatus.FAILED)
             aliveSet.add(processID);
     }
     
+    @Lock(LockType.WRITE)
     public void failure(String processID)
     {
         System.out.println("[FAILURE " + processID + "]");
+        //Setta il processo come FAILED
         processMap.put(processID, ProcessStatus.FAILED);
+        //Lo rimuove eventualmente dai vivi se lo ha settato precedentemente
         aliveSet.remove(processID);
     }
     
     @Timeout 
+    @Lock(LockType.WRITE)
     private void checkAliveProcesses()
     {
-        Set<String> newFaultySet = new HashSet<>();
         System.out.println("ALIVE -> " + aliveSet.size());
         for(String pID : processMap.keySet())
         {
@@ -69,21 +79,25 @@ public class FaultDetectorBean
             {
                 System.out.println("Il processo " + pID + " è diventato SUSPECTED!");
                 processMap.put(pID, ProcessStatus.SUSPECTED);
-                newFaultySet.add(pID);
+                faultySet.add(pID);
             }
         }
         
-        System.out.println("FAULTY -> " + newFaultySet.size());
+        System.out.println("FAULTY -> " + faultySet.size());
+        
+        //Per ogni processo nell'insieme Faulty del round precedente
         for(String pID : faultySet)
         {
-            if(aliveSet.contains(pID) && processMap.get(pID) != ProcessStatus.FAILED)
+            //se è vivo a questo giro vuol dire che non è più SUSPECTED
+            if(aliveSet.contains(pID))
             {
                 System.out.println("Il processo " + pID + " è tornato UNSUSPECTED!");
                 processMap.put(pID, ProcessStatus.UNSUSPECTED);
+                faultySet.remove(pID);
             }
         }
         
-        this.faultySet = newFaultySet;
+        //resetto i vivi di questo Round
         this.aliveSet.clear();
     }
     
